@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <thread>
 #include <chrono>
+#include <vector>
 #include <ctime>
 
 using namespace std;
@@ -14,49 +15,32 @@ const int FORK_LIMIT = LIST_SIZE / 10;  // Limits thread count to ~10
 
 
 // Mergesort with fork/join
-template<typename RandomAccessIterator, typename Order>
-void mergesort_threaded(RandomAccessIterator first, RandomAccessIterator last, Order order) {
+void mergesort_threaded(vector<int>::iterator first, vector<int>::iterator last) {
   if (last - first > 1) {
-    RandomAccessIterator middle = first + (last - first) / 2;
+    vector<int>::iterator middle = first + (last - first) / 2;
     if (last - first > FORK_LIMIT) {
       // If the proposed list segment is too big, spawn a thread to sort the first half.
-      thread t1([=](){ mergesort_threaded(first, middle, order); });
+      thread t1([=](){ mergesort_threaded(first, middle); });
       // And sort the other half directly.
-      mergesort_threaded(middle, last, order);
+      mergesort_threaded(middle, last);
       t1.join();
     } else {
-      mergesort_threaded(first, middle, order);
-      mergesort_threaded(middle, last, order);
+      mergesort_threaded(first, middle);
+      mergesort_threaded(middle, last);
     }
-    inplace_merge(first, middle, last, order);
+    inplace_merge(first, middle, last);
   }
-}
-template<typename RandomAccessIterator>
-void mergesort_threaded(RandomAccessIterator first, RandomAccessIterator last) {
-  mergesort_threaded(first, last, std::less<typename std::iterator_traits<RandomAccessIterator>::value_type>());
 }
 
 
 // Normal mergesort
-template<typename RandomAccessIterator, typename Order>
-void mergesort(RandomAccessIterator first, RandomAccessIterator last, Order order) {
+void mergesort(vector<int>::iterator first, vector<int>::iterator last) {
   if (last - first > 1) {
-    RandomAccessIterator middle = first + (last - first) / 2;
-    mergesort(first, middle, order);
-    mergesort(middle, last, order);
-    inplace_merge(first, middle, last, order);
+    vector<int>::iterator middle = first + (last - first) / 2;
+    mergesort(first, middle);
+    mergesort(middle, last);
+    inplace_merge(first, middle, last);
   }
-}
-template<typename RandomAccessIterator>
-void mergesort(RandomAccessIterator first, RandomAccessIterator last) {
-  mergesort(first, last, std::less<typename std::iterator_traits<RandomAccessIterator>::value_type>());
-}
-
-bool sorted(vector<int> list) {
-  for (int i = 1; i != list.size(); i++) {
-    if (list[i] < list[i-1]) return false;
-  }
-  return true;
 }
 
 int main(int argc, char** argv) {
